@@ -1,21 +1,25 @@
 import xml.etree.ElementTree as ET
+import os
+from os import path
 
-tree=ET.parse('Perseus_text_1999.01.0176.xml')
+c_dialogues = {}
 
-texts = tree.getroot().find('text').find('group')
+for filename in os.listdir('xml'):
+    if filename.endswith('.xml'):
+        tree=ET.parse(os.path.join('xml',filename))
+        texts = tree.getroot().find('text').find('group')
 
+        # first we want to compile a memory of all the character lists
+        if texts is None:
+            continue
 
-# first we want to compile a memory of all the character lists
-if texts is None:
-    print 'Not a group!'
+        else:
+            for text in texts:
+                dialogueName = text.attrib['n']
+                c_dialogues[dialogueName] = []
+                cast = text.find('body').find('castList')
+                if cast is not None:
+                    for item in cast:
+                        c_dialogues[dialogueName].append(item.find('role').text)
 
-else:
-    c_dialogues= {}
-    for text in texts:
-        print '\n' + text.attrib['n'].upper()
-        print '---------------------------------'
-        cast = text.find('body').find('castList')
-        print 'CHARACTER LIST'
-        for item in cast:
-            print item.find('role').text
-
+print c_dialogues # dialogue cast lists
