@@ -1,7 +1,11 @@
 import xml.etree.ElementTree as ET
 import os
 import networkx as nx
-import matplotlib
+import matplotlib.pyplot as plt
+import re
+
+
+
 
 c_dialogues = {}
 
@@ -22,27 +26,28 @@ for filename in os.listdir('xml'):
             cast = tree.getroot().find('text').find('front').find('castList')
             if cast is not None:
                 for item in cast:
-                    if '\n' not in item.find('role').text:
-                        if item.find('role').text not in c_dialogues.keys():
-                            c_dialogues[item.find('role').text] = []
-                        c_dialogues[item.find('role').text].append(dialogueName)
+                    name = item.find('role').text
+                    if name.endswith('of '):
+                        name = name[:-3]
+
+                    if '\n' not in name:
+                        if name not in c_dialogues.keys():
+                            c_dialogues[name] = []
+                        c_dialogues[name].append(dialogueName)
         else:
             for text in texts:
                 dialogueName = text.attrib['n']
                 cast = text.find('body').find('castList')
                 if cast is not None:
                     for item in cast:
-                        if item.find('role').text not in c_dialogues.keys():
-                            c_dialogues[item.find('role').text] = []
-                        c_dialogues[item.find('role').text].append(dialogueName)
+                        name = item.find('role').text
+                        if name is not None and name.endswith('of '):
+                            name = name[:-3]
 
-# character lists - demonstrates I'll need to fix some of these (the ones that have " of"
-for key in c_dialogues.keys():
-    print key
-    print '----------'
-    for character in c_dialogues[key]:
-        print character
-    print ''
+                        if name is not None and name not in c_dialogues.keys():
+                            c_dialogues[name] = []
+                        if name is not None:
+                            c_dialogues[name].append(dialogueName)
 
 # now, to establish a dictionary of mentions
 
@@ -76,8 +81,8 @@ for filename in os.listdir('xml'):
                         c_mentions[character].append(dialogueName)
 
 
-
-mentionGraph = nx.DiGraph()
+# UNDIRECTED
+mentionGraph = nx.Graph()
 
 for character in c_mentions.keys():
     for dialogue in c_mentions[character]:
@@ -86,4 +91,23 @@ for character in c_mentions.keys():
             mentionGraph.add_node(dialoguein)
             mentionGraph.add_edge(dialogue,dialoguein)
 
-nx.draw(mentionGraph)
+nx.draw(mentionGraph, with_labels = True)
+plt.show()
+plt.savefig( "undirectedlabels.png" )
+
+# DIRECTED
+mentionGraph2 = nx.DiGraph()
+
+for character in c_mentions.keys():
+    for dialogue in c_mentions[character]:
+        mentionGraph2.add_node(dialogue)
+        for dialoguein in c_dialogues[character]:
+            mentionGraph2.add_node(dialoguein)
+            mentionGraph2.add_edge(dialogue,dialoguein)
+
+nx.draw(mentionGraph2,pos=nx.spring_layout(mentionGraph2),with_labels=True)
+plt.show()
+plt.savefig("directedlabels.png")
+
+
+
